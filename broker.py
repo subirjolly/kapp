@@ -29,7 +29,7 @@ class Broker(object):
         proc = Process(
             name="{0}: {1}".format(username, digest),
             target=run_worker,
-            args=(worker,))
+            args=(worker, username, password))
         proc.start()
         proc.join()
 
@@ -39,10 +39,10 @@ class Broker(object):
 
 
 # FIXME: Needs to respond back to client
-def run_worker(worker):
+def run_worker(worker, username, password):
     response = []
     commands = [
-        ". login email@domain.com password",
+        ". login {0} {1}".format(username, password),
         ". select inbox"
     ]
     try:
