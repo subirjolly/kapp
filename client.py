@@ -4,9 +4,11 @@ import select
 
 
 class Client(object):
-    def __init__(self, host, port=143):
+    def __init__(self, host, port=143, block=0, timeout=0):
         self.host = host
         self.port = port
+        self.block = block
+        self.timeout = timeout
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def connect(self):
@@ -41,11 +43,13 @@ class Client(object):
         BUFFER_SIZE = 1024
         response = []
 
-        self.connection.setblocking(0)
+        self.connection.setblocking(self.block)
+        if self.timeout > 0:
+            self.connection.settimeout(self.timeout)
 
         try:
-            receiving = select.select([self.connection], [], [])
-            while receiving:
+            receiving, _, _ = select.select([self.connection], [], [])
+            while receiving and True:
                 received = self.connection.recv(BUFFER_SIZE)
                 if not received:
                     break

@@ -23,10 +23,13 @@ class Worker(object):
     def disconnect(self):
         self.connection.close()
 
-    def run(self, command):
-        if command.strip().lower() == "bye" or \
-           command.strip().lower() == "logout":
+    def query(self, command):
+        parts = command.split(" ")
+        if len(parts) > 1 and (
+           parts[1].lower() == "logout" or \
+           parts[1].lower() == "bye"):
             self.connection.close()
             return ""
 
-        return self.connection.query(command)
+        result = self.connection.query(command)
+        return result

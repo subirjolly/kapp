@@ -1,4 +1,8 @@
-from listener import Listener
+from broker import Broker
+from worker import WorkerConfig
 
-l = Listener()
-l.start()
+host = ""
+port = 143
+
+worker_config = WorkerConfig(host, port)
+Broker("localhost", 1430, worker_config).start()
