@@ -1,7 +1,7 @@
 from broker import Broker
 from worker import WorkerConfig
 
-host = ""
+host = "secure.emailsrvr.com"
 port = 143
 
 worker_config = WorkerConfig(host, port)

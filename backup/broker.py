@@ -42,6 +42,7 @@ class Broker(object):
         worker = None
         while True:
             data = self.read(connection)
+            print(data)
             result = ""
             try:
                 if "login" in data:

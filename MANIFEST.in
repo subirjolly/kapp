@@ -1,0 +1,3 @@
+include requirements.txt development.txt
+include README.md setup.cfg setup.py
+prune tests

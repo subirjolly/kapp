@@ -27,7 +27,7 @@ class Client(object):
 
         if command[-2:] != "\r\n":
             command += "\r\n"
-        sent = self.connection.send(command.encode("utf-8"))
+        sent = self.connection.sendall(command.encode("utf-8"))
         if sent == 0:
             self.close()
 
