@@ -1,7 +1,9 @@
+import socket
+
 from multiprocessing import Process, Lock, Queue, Pool
 from multiprocessing.managers import BaseManager, BaseProxy
 
-from src.proxy import Proxy
+from src.proxy import ProxyListener
 from src.logger import Logger
 
 
@@ -39,36 +41,36 @@ class KAPP(object):
         self.logger.log("Starting engine!")
         KAPPManager.register("DataStore", DataStore)
         self.manager = KAPPManager()
+        self.sock = None
 
     def start(self):
         count = int(self.config["PROCESSES"])
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.bind(("127.0.0.1", 1430))
+        self.sock.listen(count)
+
         self.manager.start()
         data_store = self.manager.DataStore()
         pool = Pool(count)
 
         while True:
-            self.wait()
-
-            is_available = False
-            if data_store.clients_count() < count:
-                pool.apply_async(func=spin_up, args=(data_store, self.logger))
-            else:
-                self.logger.log("Not spawning")
+            if data_store.clients_count() >= count:
+                continue
 
             self.logger.log("Used: {0}.".format(data_store.clients_count()))
+            connection, addr = self.sock.accept()
+
+            pool.apply_async(func=spin_up, args=(connection, addr, data_store, self.logger))
 
         pool.close()
 
-    def wait(self):
-        data = input("> ")
-        if data.lower() == "q":
-            raise Exception()
 
-
-def spin_up(data_store, logger):
-    p = Proxy(data_store, logger)
+def spin_up(connection, addr, data_store, logger):
+    logger.log("Starting proxy!")
+    listener = ProxyListener(data_store, connection, addr, logger)
     try:
-        p.start()
+        listener.start()
     except Exception as e:
-        print(str(e))
+        logger.log(str(e))
         raise

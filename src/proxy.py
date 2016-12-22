@@ -7,42 +7,17 @@ import select
 import errno
 import hashlib
 
-class Proxy(object):
-    def __init__(self, data_store, logger):
-        self.id = uuid.uuid4()
-        self.data_store = data_store
-        self.logger = logger
-        self.logger.log("Spawning: {0}".format(self.id))
+from src.errors import ClientDisconnectedError
 
-    def start(self):
-        self.data_store.clients_increment()
-        self.logger.log("Starting proxy: {0}".format(self.id))
-        for i in range(randint(1, 4)):
-            self.logger.log("Process: {0}. Sleeping({1}).".format(self.id, i))
-            #sleep(1)
-        self.logger.log("Decrementing proxy: {0}".format(self.id))
-        self.data_store.clients_decrement()
-
-        # TODO: Inject this instead.
-        self.logger.log("Connecting")
-        try:
-            listener = ProxyListener("127.0.0.1", 1430)
-        except Exception as e:
-            raise
-        self.logger.log("Decremented")
-        self.logger.log("Listening proxy: {0}".format(self.id))
-        listener.start()
 
 
 class ProxyListener(object):
-    def __init__(self, host, port):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.host = host
-        self.port = port
-        self.sock.bind((host, port))
-
-        self.pool = {}
+    def __init__(self, data_store, connection, addr, logger):
+        self.id = uuid.uuid4()
+        self.data_store = data_store
+        self.logger = logger
+        self.addr = addr
+        self.connection = connection
 
     def _get_digest(self, username, password):
         h = hashlib.new('sha256')
@@ -51,41 +26,54 @@ class ProxyListener(object):
 
         return h.hexdigest()
 
-
     def start(self):
-        self.sock.listen(1)
-        connection, addr = self.sock.accept()
-        worker = None
+        self.data_store.clients_increment()
+        self.logger.log("Starting proxy: {0}".format(self.id))
+        self.logger.log("Used Proxies: {0}.".format(self.data_store.clients_count()))
+
         try:
             while True:
-                data = self.read(connection)
+                self.validate_connection()
+
                 try:
-                    if "quit" in data:
+                    data = self.read()
+                    if data is None:
                         break
 
-                    if data:
-                        connection.sendall(data.encode("UTF-8"))
-                except Exception as e:
+                    self.connection.sendall(data.encode("UTF-8"))
+                except:
                     pass
+        except ClientDisconnectedError:
+            self.logger.log("Client disconnected for proxy: {0}.".format(self.id))
         finally:
-            connection.close()
+            self.logger.log("Stopping proxy: {0}".format(self.id))
+            self.data_store.clients_decrement()
+            self.connection.close()
 
-    def read(self, connection):
+    def validate_connection(self):
+        received, _, _ = select.select([self.connection], [], [], 0)
+        if received:
+            peeked = self.connection.recv(1024, socket.MSG_PEEK)
+            if len(peeked) == 0:
+                raise ClientDisconnectedError()
+
+    def read(self):
         BUFFER_SIZE = 1024
         response = []
 
-        connection.setblocking(0)
+        self.connection.setblocking(0)
 
         try:
-            receiving, _, _ = select.select([connection], [], [])
+            receiving, _, _ = select.select([self.connection], [], [])
             while receiving:
-                received = connection.recv(BUFFER_SIZE)
+                received = self.connection.recv(BUFFER_SIZE)
+
                 if not received:
                     break
+
                 response.append(received.decode("UTF-8"))
         except socket.error as e:
             if e.args[0] != errno.EWOULDBLOCK:
                 raise e
-        result = "".join(response)
 
-        return result
+        return "".join(response)

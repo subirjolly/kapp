@@ -25,8 +25,9 @@ class Client(object):
     def query(self, command):
         self.validate()
 
-        if command[-2:] != "\r\n":
-            command += "\r\n"
+        # HACK: Python client is ignoring if sending empty data.
+        if command == "":
+            command = " "
         sent = self.connection.sendall(command.encode("utf-8"))
         if sent == 0:
             self.close()
@@ -49,7 +50,7 @@ class Client(object):
 
         try:
             receiving, _, _ = select.select([self.connection], [], [])
-            while receiving and True:
+            while receiving:
                 received = self.connection.recv(BUFFER_SIZE)
                 if not received:
                     break
