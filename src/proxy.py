@@ -1,3 +1,4 @@
+import re
 import uuid
 from random import randint
 from time import sleep
@@ -7,13 +8,46 @@ import select
 import errno
 import hashlib
 
-from src.errors import ClientDisconnectedError
+from src.errors import ClientDisconnectedError, NoProxyMatchError
 
 
+class Proxy(object):
+    PATTERN = "^\S\slogin\s\S*\s\S*$"
+    END_PATTERN = "^\S\slogout*$"
+
+    def __init__(self):
+        self.id = None
+
+    def set_id(self, id):
+        self.id = id
+
+    def is_end(self, line):
+        raise NotImplemented("match_ending method not implemented!")
+
+class SampleProxy(Proxy):
+    pass
+
+class ProxyGenerator(object):
+    def __init__(self):
+        self.proxies = {}
+
+    def register(self, pattern, proxy_type):
+        self.proxies[proxy_type] = pattern
+
+    def generate(self, line):
+        for proxy_type, pattern in self.proxies.items():
+            # TODO: Pick up from here.
+            # Need to generate proxy, then generate id and then run commands, then end.
+            print(re.match(pattern, line))
+            print(proxy_type())
+
+        raise NoProxyMatchError()
 
 class ProxyListener(object):
-    def __init__(self, data_store, connection, addr, logger):
+    def __init__(self, proxy_generator, data_store, connection, addr, logger):
         self.id = uuid.uuid4()
+        self.proxy = None
+        self.proxy_generator = proxy_generator
         self.data_store = data_store
         self.logger = logger
         self.addr = addr
@@ -30,13 +64,14 @@ class ProxyListener(object):
         self.data_store.clients_increment()
         self.logger.log("Starting proxy: {0}".format(self.id))
         self.logger.log("Used Proxies: {0}.".format(self.data_store.clients_count()))
+        data = self.read()
+        proxy = self.proxy_generator.generate(data)
 
         try:
             while True:
                 self.validate_connection()
 
                 try:
-                    data = self.read()
                     if data is None:
                         break
 
