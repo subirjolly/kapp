@@ -2,6 +2,7 @@ import socket
 import errno
 import select
 
+from src.errors import ClientDisconnectedError, InvalidCommandError
 
 class Client(object):
     def __init__(self, host, port=143, block=0, timeout=0):
@@ -29,14 +30,14 @@ class Client(object):
         if received:
             peeked = self.connection.recv(1024, socket.MSG_PEEK)
             if len(peeked) == 0:
-                raise InvalidConnectionError()
+                raise ClientDisconnectedError()
 
     def query(self, command):
         self.validate()
 
         # HACK: Python client is ignoring if sending empty data.
         if command == "":
-            raise Exception("Invalid command!")
+            raise InvalidCommandError()
 
         if command[-2:] != "\r\n":
             command += "\r\n"

@@ -73,4 +73,3 @@ def spin_up(proxy_generator, connection, addr, data_store, logger):
         listener.start()
     except Exception as e:
         logger.log(str(e))
-        raise

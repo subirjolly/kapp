@@ -1,7 +1,7 @@
 from src.kapp import KAPP
 from src.logger import Logger
 from src.config.loader import ConfigLoader
-from src.proxy import SampleProxy, ProxyGenerator
+from src.proxy import IMAPProxy, ProxyGenerator
 
 
 def main():
@@ -11,11 +11,17 @@ def main():
     kapp = KAPP(loader.get("KAPP"), logger)
 
     generator = ProxyGenerator()
-    generator.register(SampleProxy.PATTERN, SampleProxy)
-    generator.generate(". login abc def")
+    generator.register(IMAPProxy.PATTERN, IMAPProxy)
+    #proxy = generator.generate(". login abc def")
+    #print(proxy.username)
+    #print(proxy.password)
+    #proxy = IMAPProxy(". login test1@dev.webmail.us Pr0d_web@pps_t3st")
+    #while True:
+    #    inp = input("Q: ")
+    #    proxy.query(inp)
 
-    proxy = SampleProxy()
-    kapp.start(proxy)
+
+    kapp.start(generator)
 
 if __name__ == "__main__":
     main()
