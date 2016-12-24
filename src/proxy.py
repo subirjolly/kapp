@@ -32,8 +32,10 @@ class IMAPProxy(Proxy):
         parts = line.split()
         self.username = parts[2]
         self.password = parts[3]
-        self.client = Client(self.HOST, self.PORT)
-        self.client.connect()
+        self.client = Client()
+
+    def connect(self):
+        return self.client.connect(self.HOST, self.PORT)
 
     def login(self, line):
         return self.client.query(line)
@@ -81,7 +83,9 @@ class ProxyListener(object):
             self.logger.log("Used Proxies: {0}.".format(self.data_store.clients_count()))
             data = self.read()
             proxy = self.proxy_generator.generate(data)
-            response = proxy.login(data)
+            response = proxy.connect()
+            
+            response += proxy.login(data)
 
             while True:
                 self.validate_connection()

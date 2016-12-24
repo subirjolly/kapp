@@ -16,9 +16,10 @@ def main():
     #print(proxy.username)
     #print(proxy.password)
     #proxy = IMAPProxy(". login test1@dev.webmail.us Pr0d_web@pps_t3st")
+    #print(proxy.connect())
     #while True:
     #    inp = input("Q: ")
-    #    proxy.query(inp)
+    #    print(proxy.query(inp))
 
 
     kapp.start(generator)

@@ -5,15 +5,25 @@ import select
 from src.errors import ClientDisconnectedError, InvalidCommandError
 
 class Client(object):
-    def __init__(self, host, port=143, block=0, timeout=0):
+    def __init__(self):
+        self.host = None
+        self.port = None
+        self.block = None
+        self.timeout = None
+        self.connection = None
+        self.addr = None
+
+    def set_connection(self, connection, addr):
+        self.connection = connection
+        self.addr = addr
+
+    def connect(self, host, port=143):
         self.host = host
         self.port = port
-        self.block = block
-        self.timeout = timeout
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def connect(self):
         self.connection.connect((self.host, self.port))
+
+        return self.read()
 
     def close(self):
         self.connection.close()
@@ -47,9 +57,7 @@ class Client(object):
 
             raise InvalidConnectionError()
 
-        response = self.read()
-
-        return response
+        return self.read()
 
     def read(self):
         self.validate()
