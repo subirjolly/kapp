@@ -25,6 +25,7 @@ class Proxy(object):
     def is_end(self, line):
         raise NotImplemented("match_ending method not implemented!")
 
+
 class IMAPProxy(Proxy):
     HOST = "secure.emailsrvr.com"
     PORT = 143
@@ -43,6 +44,7 @@ class IMAPProxy(Proxy):
     def query(self, line):
         return self.client.query(line)
 
+
 class ProxyGenerator(object):
     def __init__(self):
         self.proxies = {}
@@ -58,6 +60,7 @@ class ProxyGenerator(object):
                 return proxy_type(line)
 
         raise NoProxyMatchError()
+
 
 class ProxyListener(object):
     def __init__(self, proxy_generator, data_store, connection, addr, logger):
@@ -90,14 +93,11 @@ class ProxyListener(object):
             while True:
                 self.validate_connection()
 
-                try:
-                    if response is None:
-                        break
-                    self.connection.sendall(response.encode("UTF-8"))
+                if response is None:
+                    break
+                self.connection.sendall(response.encode("UTF-8"))
 
-                    response = proxy.query(self.read())
-                except:
-                    pass
+                response = proxy.query(self.read())
         except ClientDisconnectedError:
             self.logger.log("Client disconnected for proxy: {0}.".format(self.id))
         finally:
